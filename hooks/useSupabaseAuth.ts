@@ -44,12 +44,36 @@ export const useSupabaseAuth = () => {
     };
 
     const signInWithTempEmail = async () => {
-        // Generate a unique email based on device/time
+        setLoading(true);
+
+        // 1. Check if we already have a temporary user saved locally
+        const storedAuth = localStorage.getItem('janamen_temp_auth');
+        if (storedAuth) {
+            try {
+                const { email, password } = JSON.parse(storedAuth);
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (!error && data.user) {
+                    setUser(data.user);
+                    setLoading(false);
+                    return;
+                }
+                // If sign-in fails (e.g. user deleted on server), clear and continue to create new
+                localStorage.removeItem('janamen_temp_auth');
+            } catch (e) {
+                console.error('Error parsing stored auth', e);
+            }
+        }
+
+        // 2. Fallback: Generate a new unique email based on device/time
         const uniqueId = `user_${Date.now()}_${Math.random().toString(36).substring(7)}`;
         const tempEmail = `${uniqueId}@janamen-temp.local`;
         const tempPassword = `password_${uniqueId}`;
 
-        // Try to sign up first
+        // Try to sign up
         const { data, error } = await supabase.auth.signUp({
             email: tempEmail,
             password: tempPassword,
@@ -61,7 +85,7 @@ export const useSupabaseAuth = () => {
         });
 
         if (error && error.message.includes('already registered')) {
-            // If somehow exists, try sign in
+            // This shouldn't normally happen with random uniqueId, but for safety
             await supabase.auth.signInWithPassword({
                 email: tempEmail,
                 password: tempPassword
@@ -71,6 +95,8 @@ export const useSupabaseAuth = () => {
             // Store credentials locally for re-login
             localStorage.setItem('janamen_temp_auth', JSON.stringify({ email: tempEmail, password: tempPassword }));
         }
+
+        setLoading(false);
     };
 
     return { user, loading };

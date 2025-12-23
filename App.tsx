@@ -16,9 +16,36 @@ import { supabase } from './services/supabase';
 
 const App: React.FC = () => {
   const { user, loading: authLoading } = useSupabaseAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [history, setHistory] = useState<Record<string, DailyData>>({});
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('janamen_profile');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [history, setHistory] = useState<Record<string, DailyData>>(() => {
+    const saved = localStorage.getItem('janamen_history');
+    try {
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'food' | 'activity' | 'chat' | 'challenges' | 'profile'>(() => {
+    return (localStorage.getItem('janamen_active_tab') as any) || 'dashboard';
+  });
+
   const [dataLoading, setDataLoading] = useState(false);
+
+  // Sync state to localStorage whenever it changes
+  useEffect(() => {
+    if (profile) localStorage.setItem('janamen_profile', JSON.stringify(profile));
+    localStorage.setItem('janamen_history', JSON.stringify(history));
+    localStorage.setItem('janamen_active_tab', activeTab);
+  }, [profile, history, activeTab]);
 
   // Fetch data when user is ready
   useEffect(() => {
@@ -35,7 +62,8 @@ const App: React.FC = () => {
           .single();
 
         if (profileData) {
-          setProfile({
+          setProfile(prev => ({
+            ...prev, // Keep any local changes that might not be synced yet
             height: profileData.height,
             weight: profileData.weight,
             age: profileData.age,
@@ -43,32 +71,35 @@ const App: React.FC = () => {
             goal: profileData.goal as Goal,
             stepGoal: profileData.step_goal,
             vitaminReminderTime: profileData.vitamin_reminder_time || undefined
-          });
+          }));
         }
 
-        // Fetch History (Last 30 days likely sufficient, but fetching all for now)
+        // Fetch History
         const { data: historyData } = await supabase
           .from('daily_logs')
           .select('*')
           .eq('user_id', user.id);
 
-        if (historyData) {
-          const historyMap: Record<string, DailyData> = {};
-          historyData.forEach((log: any) => {
-            historyMap[log.date] = {
-              date: log.date,
-              calories: log.calories,
-              water: log.water,
-              sleepHours: log.sleep_hours,
-              sleepStart: log.sleep_start,
-              sleepEnd: log.sleep_end,
-              vitamins: log.vitamins,
-              steps: log.steps,
-              activities: log.activities || [],
-              meals: log.meals || []
-            };
+        if (historyData && historyData.length > 0) {
+          setHistory(prev => {
+            const merged = { ...prev };
+            historyData.forEach((log: any) => {
+              // Only overwrite local if server data is present for that date
+              merged[log.date] = {
+                date: log.date,
+                calories: log.calories,
+                water: log.water,
+                sleepHours: log.sleep_hours,
+                sleepStart: log.sleep_start,
+                sleepEnd: log.sleep_end,
+                vitamins: log.vitamins,
+                steps: log.steps,
+                activities: log.activities || [],
+                meals: log.meals || []
+              };
+            });
+            return merged;
           });
-          setHistory(historyMap);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -82,7 +113,6 @@ const App: React.FC = () => {
 
   const challenges = useChallenges(user?.id);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'food' | 'activity' | 'chat' | 'challenges' | 'profile'>('dashboard');
   const todayStr = getTodayStr();
   const todayData = history[todayStr];
 
@@ -107,10 +137,6 @@ const App: React.FC = () => {
     });
   });
 
-  useEffect(() => {
-    if (profile) localStorage.setItem('janamen_profile', JSON.stringify(profile));
-    localStorage.setItem('janamen_history', JSON.stringify(history));
-  }, [profile, history]);
 
   // Sync Profile Changes
   const handleProfileUpdate = async (newProfile: UserProfile) => {
