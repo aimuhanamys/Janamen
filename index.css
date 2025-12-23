@@ -1,0 +1,19 @@
+input,
+textarea {
+    caret-color: rgba(16, 185, 129, 0.6) !important;
+    /* emerald-500 with transparency */
+    caret-shape: block;
+    /* Some browsers support making it thicker this way */
+}
+
+/* Ensure numeric inputs don't show spinners if we want a cleaner look */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}

@@ -6,10 +6,11 @@ import { formatTime } from '../utils';
 
 interface FoodLoggerProps {
   onAddMeal: (meal: Meal) => void;
+  onDeleteMeal: (mealId: string) => void;
   history: Meal[];
 }
 
-const FoodLogger: React.FC<FoodLoggerProps> = ({ onAddMeal, history }) => {
+const FoodLogger: React.FC<FoodLoggerProps> = ({ onAddMeal, onDeleteMeal, history }) => {
   const [loading, setLoading] = useState(false);
   const [textInput, setTextInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,31 +69,31 @@ const FoodLogger: React.FC<FoodLoggerProps> = ({ onAddMeal, history }) => {
     <div className="space-y-6">
       <div className="bg-white p-7 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
         <h2 className="text-3xl font-black text-slate-900 mb-6 tracking-tighter text-left">ЕДА</h2>
-        
+
         <div className="flex gap-3 mb-6">
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
           >
             📷 ФОТО БЛЮДА
           </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            accept="image/*" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/*"
+            className="hidden"
           />
         </div>
 
         <form onSubmit={handleTextSubmit} className="space-y-4">
-          <textarea 
+          <textarea
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             placeholder="Что вы съели? Опишите словами..."
             className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 text-sm font-medium focus:ring-4 focus:ring-emerald-500/5 focus:outline-none transition-all resize-none h-28"
           />
-          <button 
+          <button
             disabled={loading || !textInput.trim()}
             className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl disabled:opacity-50 transition-all hover:bg-black uppercase tracking-widest text-xs"
           >
@@ -114,7 +115,7 @@ const FoodLogger: React.FC<FoodLoggerProps> = ({ onAddMeal, history }) => {
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Лог за сегодня</h3>
             <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase">Итого: {dailyTotals.calories} ккал</span>
           </div>
-          
+
           <div className="space-y-4">
             {history.slice().reverse().map(meal => (
               <div key={meal.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/30 relative overflow-hidden group transition-all hover:shadow-xl">
@@ -124,8 +125,17 @@ const FoodLogger: React.FC<FoodLoggerProps> = ({ onAddMeal, history }) => {
                     <h4 className="font-black text-slate-900 text-lg leading-tight group-hover:text-emerald-700 transition-colors">{meal.name}</h4>
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{formatTime(meal.timestamp)} • {meal.weight}г</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-slate-900 text-2xl tracking-tighter">{meal.calories} <span className="text-[10px] text-slate-400 uppercase font-normal">ккал</span></p>
+                  <div className="flex items-start gap-4">
+                    <div className="text-right flex flex-col items-end">
+                      <p className="font-black text-slate-900 text-2xl tracking-tighter">{meal.calories} <span className="text-[10px] text-slate-400 uppercase font-normal">ккал</span></p>
+                      <button
+                        onClick={() => onDeleteMeal(meal.id)}
+                        className="mt-2 text-slate-300 hover:text-red-500 transition-colors p-1"
+                        title="Удалить"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3 border-t border-slate-50 pt-4">

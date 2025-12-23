@@ -201,6 +201,16 @@ const App: React.FC = () => {
     });
   }, [todayStr, user, challenges]);
 
+  const deleteMeal = (mealId: string) => {
+    const current = history[todayStr] || { date: todayStr, calories: 0, water: 0, sleepHours: 0, sleepStart: "23:00", sleepEnd: "07:00", vitamins: false, steps: 0, activities: [], meals: [] };
+    const updatedMeals = (current.meals || []).filter(m => m.id !== mealId);
+
+    updateDaily({
+      meals: updatedMeals,
+      calories: updatedMeals.reduce((acc, m) => acc + m.calories, 0)
+    });
+  };
+
   const addMeal = (meal: Meal) => {
     const current = history[todayStr] || { date: todayStr, calories: 0, water: 0, sleepHours: 0, sleepStart: "23:00", sleepEnd: "07:00", vitamins: false, steps: 0, activities: [], meals: [] };
     const updatedMeals = [...(current.meals || []), meal];
@@ -280,7 +290,7 @@ const App: React.FC = () => {
             {streak >= 3 && <Prediction history={history} />}
           </>
         )}
-        {activeTab === 'food' && <FoodLogger onAddMeal={addMeal} history={todayData?.meals || []} />}
+        {activeTab === 'food' && <FoodLogger onAddMeal={addMeal} onDeleteMeal={deleteMeal} history={todayData?.meals || []} />}
         {activeTab === 'activity' && <ActivityLogger onAddActivity={(a) => updateDaily({ activities: [...(todayData?.activities || []), a] })} activities={todayData?.activities || []} steps={steps} isTracking={isTracking} />}
         {activeTab === 'chat' && <AIChat context={{ profile, todayData }} />}
         {activeTab === 'challenges' && <Challenges hookData={challenges} />}
