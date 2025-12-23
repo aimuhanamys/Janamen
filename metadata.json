@@ -1,0 +1,7 @@
+{
+  "name": "Janamen Health",
+  "description": "AI-powered health assistant and habit tracker. Calculate BMR, analyze food from photos, and track your daily recovery score with gamified streaks and activity monitoring.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
