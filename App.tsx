@@ -116,13 +116,16 @@ const App: React.FC = () => {
   const todayStr = getTodayStr();
   const todayData = history[todayStr];
 
-  // Автономный трекер шагов
-  const { steps, isTracking } = useStepCounter(todayData?.steps || 0, (newCount) => {
+  // Автономный трекер шагов с мемоизацией коллбэка
+  const handleStepChange = useCallback((newCount: number) => {
     setHistory(prev => {
       const current = prev[todayStr] || {
         date: todayStr, calories: 0, water: 0, sleepHours: 0, sleepStart: "23:00", sleepEnd: "07:00",
         vitamins: false, steps: 0, activities: [], meals: []
       };
+
+      // Проверяем, действительно ли число изменилось
+      if (current.steps === newCount) return prev;
 
       // Auto-track steps challenge
       const increase = newCount - current.steps;
@@ -135,7 +138,9 @@ const App: React.FC = () => {
 
       return { ...prev, [todayStr]: { ...current, steps: newCount } };
     });
-  });
+  }, [todayStr, challenges.activeChallengeId, challenges.availableChallenges, challenges.logProgress]);
+
+  const { steps, isTracking } = useStepCounter(todayData?.steps || 0, handleStepChange);
 
 
   // Sync Profile Changes
